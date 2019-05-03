@@ -537,8 +537,11 @@ module.exports = {
         }
         return entry.response;
       })
-      .map(deleteInternalProperties);
-    pages = pages.map(deleteInternalProperties);
+    
+    if (!options.keepInternalProperties) {
+      entries = entries.map(deleteInternalProperties);
+      pages = pages.map(deleteInternalProperties);
+    }
     pages = pages.reduce((result, page, index) => {
       const hasEntry = entries.some(entry => entry.pageref === page.id);
       if (hasEntry) {
