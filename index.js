@@ -92,7 +92,7 @@ module.exports = {
             if (responsesWithoutPage.length > 0) {
               for (let params of responsesWithoutPage) {
                 let entry = entries.find(
-                  entry => entry.__requestId === params.requestId
+                  entry => entry._requestId === params.requestId
                 );
                 if (entry) {
                   populateEntryFromResponse(
@@ -150,7 +150,7 @@ module.exports = {
               startedDateTime: '',
               __requestWillBeSentTime: params.timestamp,
               __wallTime: params.wallTime,
-              __requestId: params.requestId,
+              _requestId: params.requestId,
               __frameId: params.frameId,
               _initialPriority: request.initialPriority,
               _priority: request.initialPriority,
@@ -189,10 +189,10 @@ module.exports = {
 
             if (params.redirectResponse) {
               const previousEntry = entries.find(
-                entry => entry.__requestId === params.requestId
+                entry => entry._requestId === params.requestId
               );
               if (previousEntry) {
-                previousEntry.__requestId += 'r';
+                previousEntry._requestId += 'r';
                 populateEntryFromResponse(
                   previousEntry,
                   params.redirectResponse,
@@ -244,7 +244,7 @@ module.exports = {
             }
 
             const entry = entries.find(
-              entry => entry.__requestId === params.requestId
+              entry => entry._requestId === params.requestId
             );
             if (!entry) {
               debug(
@@ -277,12 +277,12 @@ module.exports = {
             }
 
             let entry = entries.find(
-              entry => entry.__requestId === params.requestId
+              entry => entry._requestId === params.requestId
             );
 
             if (!entry) {
               entry = entriesWithoutPage.find(
-                entry => entry.__requestId === params.requestId
+                entry => entry._requestId === params.requestId
               );
             }
             if (!entry) {
@@ -332,7 +332,7 @@ module.exports = {
             }
 
             const entry = entries.find(
-              entry => entry.__requestId === params.requestId
+              entry => entry._requestId === params.requestId
             );
             if (!entry) {
               debug(
@@ -342,7 +342,12 @@ module.exports = {
               );
               continue;
             }
-            entry.response.content.size += params.dataLength;
+            // It seems that people sometimes have an entry without a response,
+            // I wonder how that works
+            // https://github.com/sitespeedio/sitespeed.io/issues/2645
+            if (entry.response) {
+              entry.response.content.size += params.dataLength;
+            }
           }
           break;
 
@@ -358,7 +363,7 @@ module.exports = {
             }
 
             const entry = entries.find(
-              entry => entry.__requestId === params.requestId
+              entry => entry._requestId === params.requestId
             );
             if (!entry) {
               debug(
@@ -369,7 +374,7 @@ module.exports = {
               continue;
             }
 
-            const timings = entry.timings;
+            const timings = entry.timings || {};
             timings.receive = formatMillis(
               (params.timestamp - entry._requestTime) * 1000 -
                 entry.__receiveHeadersEnd
@@ -378,9 +383,9 @@ module.exports = {
               max(0, timings.blocked) +
               max(0, timings.dns) +
               max(0, timings.connect) +
-              timings.send +
-              timings.wait +
-              timings.receive;
+              max(0, timings.send) +
+              max(0, timings.wait) +
+              max(0, timings.receive);
 
             // For cached entries, Network.loadingFinished can have an earlier
             // timestamp than Network.dataReceived
@@ -388,20 +393,24 @@ module.exports = {
             // encodedDataLength will be -1 sometimes
             if (params.encodedDataLength >= 0) {
               const response = entry.response;
+              if (response) {
+                response._transferSize = params.encodedDataLength;
+                response.bodySize = params.encodedDataLength;
 
-              response._transferSize = params.encodedDataLength;
-              response.bodySize = params.encodedDataLength;
+                if (
+                  isHttp1x(response.httpVersion) &&
+                  response.headersSize > -1
+                ) {
+                  response.bodySize -= response.headersSize;
+                }
 
-              if (isHttp1x(response.httpVersion) && response.headersSize > -1) {
-                response.bodySize -= response.headersSize;
-              }
-
-              const compression = Math.max(
-                0,
-                response.content.size - response.bodySize
-              );
-              if (compression > 0) {
-                response.content.compression = compression;
+                const compression = Math.max(
+                  0,
+                  response.content.size - response.bodySize
+                );
+                if (compression > 0) {
+                  response.content.compression = compression;
+                }
               }
             }
           }
@@ -464,7 +473,7 @@ module.exports = {
             }
 
             const entry = entries.find(
-              entry => entry.__requestId === params.requestId
+              entry => entry._requestId === params.requestId
             );
             if (!entry) {
               debug(
@@ -483,7 +492,7 @@ module.exports = {
               })`
             );
             entries = entries.filter(
-              entry => entry.__requestId !== params.requestId
+              entry => entry._requestId !== params.requestId
             );
           }
           break;
@@ -491,7 +500,7 @@ module.exports = {
         case 'Network.resourceChangedPriority':
           {
             const entry = entries.find(
-              entry => entry.__requestId === params.requestId
+              entry => entry._requestId === params.requestId
             );
 
             if (!entry) {

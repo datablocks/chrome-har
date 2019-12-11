@@ -1,5 +1,25 @@
 # CHANGELOG
 
+version 0.11.4 2019-10-16
+-------------------------
+* Reverted the _initiator field fix since that was an old upstream issue in Chrome [#44](https://github.com/sitespeedio/chrome-har/pull/44).
+
+version 0.11.3 2019-10-14
+-------------------------
+* Better parsing of the _initiator field fixing an error for some HARs, thank you  [Aleksandr Semyonov](https://github.com/juvirez) for the PR [#44](https://github.com/sitespeedio/chrome-har/pull/44).
+
+version 0.11.2 2019-09-21
+-------------------------
+* Extra check that we really got a response in the trace [#54](https://github.com/sitespeedio/chrome-har/pull/54)
+
+version 0.11.1 2019-09-14
+-------------------------
+* Catch if a request misses the response/timings [#53](https://github.com/sitespeedio/chrome-har/pull/53).
+
+version 0.11.0 2019-07-23
+-------------------------
+* Include Chrome request id as _requestId to make it simpler in Browsertime to add response bodies  [#50](https://github.com/sitespeedio/chrome-har/pull/50).
+
 version 0.10.0 2019-01-09
 -------------------------
 * Support for response bodies, thank you [Michael Cypher](https://github.com/mikeecb) for the PR [#41](https://github.com/sitespeedio/chrome-har/pull/41).
